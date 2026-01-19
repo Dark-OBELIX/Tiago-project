@@ -5,3 +5,4 @@ source /opt/ros/noetic/setup.bash
 
 Flux video lu direct avec ros : rosrun image_view image_view image:=/xtion/rgb/image_raw
 
+user@Vador-2:~/custom_ws/src/tiago_custom_pkg/src/Tiago-project$ 
