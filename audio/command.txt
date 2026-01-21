@@ -1,6 +1,6 @@
-Commande pour recup l'audio
+Commande pour récupérer l'audio
 
-Pour recup l'audio de la pieuvre dans le docker , il faut le creer comme suis :
+Pour récupérer l'audio de la pieuvre dans le Docker, il faut créer le conteneur comme suit :
 
 docker run -it \
   -d \
@@ -15,15 +15,24 @@ docker run -it \
   docker_tiagocesi_image_full \
   bash
 
-Il faudra ensuite installer la lib audio :
-    sudo apt-get install -y alsa-utils
 
-On peux vérifier que le micro est bien vu par le docker :
-    arecord -l
+Il faudra ensuite installer la bibliothèque audio :
 
-Puis enregister un fichier audio avec :
-    sudo arecord -D hw:2,0 -f S16_LE -c 1 -r 48000 -t wav -d 10 test_usb_mic.wav
-  
-Puis jouer :
-    aplay /home/Tiago-project/audio/test_files/test_usb_mic.wav
+sudo apt-get install -y alsa-utils
 
+
+On peut vérifier que le micro est bien détecté par le Docker avec la commande :
+
+arecord -l
+
+
+Si le périphérique USB Audio n'est pas trouvé sous hw:2,0, il faudra adapter la commande en fonction du périphérique correct (par exemple, hw:0,0 si nécessaire).
+
+Ensuite, pour enregistrer un fichier audio depuis le micro, on utilise la commande suivante :
+
+sudo arecord -D hw:2,0 -f S16_LE -c 1 -r 48000 -t wav -d 10 test_usb_mic.wav
+
+
+Et pour jouer l'enregistrement :
+
+aplay /home/Tiago-project/audio/test_files/test_usb_mic.wav
