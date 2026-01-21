@@ -7,29 +7,33 @@ from cv_bridge import CvBridge
 from ultralytics import YOLO
 
 # ----------------------------
-# Settings (you can also turn these into ROS params later)
+# Settings
 # ----------------------------
-MODEL_PATH = "best_brochure.pt"   # your YOLO weights
-CONF = 0.55                       # raise (0.60-0.70) to reduce false positives
-IMGSZ = 640                       # 640 good; 960 helps far objects (slower)
+MODEL_PATH = "best_brochure.pt"
+CONF = 0.55
+IMGSZ = 640
 WINDOW = "Brochure + Color (press q to quit)"
-TOPIC = "/xtion/rgb/image_raw"    # camera topic
+TOPIC = "/xtion/rgb/image_raw"
+
+CONF_EPS = 0.02   # minimal confidence change to trigger logging
 # ----------------------------
 
 bridge = CvBridge()
-model = None  # will be loaded once in main()
+model = None
+
+# State memory (for logging only on changes)
+prev_detected = False
+prev_conf = None
 
 
 def color_name_from_roi(roi_bgr: np.ndarray) -> str:
     """
-    Simple color naming based on dominant hue in HSV, using only saturated/bright pixels.
-    Returns: yellow / green / blue / pink-red / unknown
+    Simple color naming based on dominant hue in HSV.
     """
     if roi_bgr is None or roi_bgr.size == 0:
         return "unknown"
 
     roi = cv2.resize(roi_bgr, (240, 240), interpolation=cv2.INTER_AREA)
-
     hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
     h, s, v = cv2.split(hsv)
 
@@ -37,7 +41,7 @@ def color_name_from_roi(roi_bgr: np.ndarray) -> str:
     if np.count_nonzero(mask) < 800:
         return "unknown"
 
-    h_med = int(np.median(h[mask]))  # 0..179 (OpenCV hue)
+    h_med = int(np.median(h[mask]))
 
     if 18 <= h_med <= 35:
         return "yellow"
@@ -53,43 +57,59 @@ def color_name_from_roi(roi_bgr: np.ndarray) -> str:
 
 def annotate_brochure(frame_bgr: np.ndarray) -> np.ndarray:
     """
-    Runs YOLO on frame, keeps best detection only, infers color from ROI,
-    and returns an annotated frame.
+    Runs YOLO, keeps best detection only,
+    logs only on detection / confidence change,
+    returns annotated frame.
     """
-    global model
-    annotated = frame_bgr.copy()
+    global model, prev_detected, prev_conf
 
-    if model is None:
-        cv2.putText(
-            annotated, "YOLO model not loaded",
-            (12, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 0, 255), 2
-        )
-        return annotated
+    annotated = frame_bgr.copy()
 
     results = model.predict(frame_bgr, conf=CONF, imgsz=IMGSZ, verbose=False)
     r = results[0]
 
+    # ----------------------------
+    # No detection
+    # ----------------------------
     if r.boxes is None or len(r.boxes) == 0:
+        if prev_detected:
+            rospy.loginfo("Brochure lost ❌")
+            prev_detected = False
+            prev_conf = None
+
         cv2.putText(
             annotated, "No brochure detected",
             (12, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.85, (0, 0, 255), 2
         )
         return annotated
 
-    # Keep best detection only
+    # ----------------------------
+    # Best detection
+    # ----------------------------
     best = max(r.boxes, key=lambda b: float(b.conf[0]))
-    x1, y1, x2, y2 = map(int, best.xyxy[0].tolist())
     det_conf = float(best.conf[0])
 
-    # Clamp coords
+    if not prev_detected:
+        rospy.loginfo(f"Brochure detected ✅ (conf={det_conf:.2f})")
+    elif prev_conf is not None and abs(det_conf - prev_conf) > CONF_EPS:
+        rospy.loginfo(
+            f"Brochure confidence changed: {prev_conf:.2f} → {det_conf:.2f}"
+        )
+
+    prev_detected = True
+    prev_conf = det_conf
+
+    x1, y1, x2, y2 = map(int, best.xyxy[0].tolist())
+
     h, w = frame_bgr.shape[:2]
-    x1 = max(0, x1); y1 = max(0, y1)
-    x2 = min(w, x2); y2 = min(h, y2)
+    x1 = max(0, x1)
+    y1 = max(0, y1)
+    x2 = min(w, x2)
+    y2 = min(h, y2)
 
     roi = frame_bgr[y1:y2, x1:x2]
     cname = color_name_from_roi(roi)
 
-    # Draw box + label
     cv2.rectangle(annotated, (x1, y1), (x2, y2), (0, 255, 0), 2)
     cv2.putText(
         annotated,
@@ -100,12 +120,13 @@ def annotate_brochure(frame_bgr: np.ndarray) -> np.ndarray:
         (0, 255, 0),
         2
     )
+
     return annotated
 
 
 def image_cb(msg: Image):
     """
-    Callback called each time a new image arrives from the ROS topic.
+    ROS image callback
     """
     try:
         frame = bridge.imgmsg_to_cv2(msg, desired_encoding="bgr8")
@@ -113,7 +134,6 @@ def image_cb(msg: Image):
 
         cv2.imshow(WINDOW, annotated)
 
-        # Allow quitting with 'q'
         if cv2.waitKey(1) & 0xFF == ord("q"):
             rospy.signal_shutdown("User requested shutdown (pressed q).")
 
@@ -126,7 +146,6 @@ def main():
 
     rospy.init_node("brochure_detector_viewer")
 
-    # Load YOLO model once (important for speed!)
     rospy.loginfo(f"Loading YOLO model: {MODEL_PATH}")
     model = YOLO(MODEL_PATH)
     rospy.loginfo("YOLO model loaded ✅")
@@ -138,7 +157,10 @@ def main():
         queue_size=1
     )
 
-    rospy.loginfo(f"Subscribed to {TOPIC}. Press 'q' on the OpenCV window to quit.")
+    rospy.loginfo(
+        f"Subscribed to {TOPIC}. Press 'q' on the OpenCV window to quit."
+    )
+
     try:
         rospy.spin()
     finally:
