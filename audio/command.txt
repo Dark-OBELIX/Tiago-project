@@ -1,2 +1,29 @@
 Commande pour recup l'audio
 
+Pour recup l'audio de la pieuvre dans le docker , il faut le creer comme suis :
+
+docker run -it \
+  -d \
+  -u user \
+  -e DISPLAY=$DISPLAY \
+  --network host \
+  --privileged \
+  -v /tmp/.X11-unix/:/tmp/.X11-unix/ \
+  -v $HOME/.config/pulse:/root/.config/pulse \
+  --device /dev/snd \
+  --name="tiago-real-audio-usb" \
+  docker_tiagocesi_image_full \
+  bash
+
+Il faudra ensuite installer la lib audio :
+    sudo apt-get install -y alsa-utils
+
+On peux vérifier que le micro est bien vu par le docker :
+    arecord -l
+
+Puis enregister un fichier audio avec :
+    sudo arecord -D hw:2,0 -f S16_LE -c 1 -r 48000 -t wav -d 10 test_usb_mic.wav
+  
+Puis jouer :
+    aplay /home/Tiago-project/audio/test_files/test_usb_mic.wav
+
