@@ -1,4 +1,4 @@
-**Création du conteneur Docker avec accès audio
+***Création du conteneur Docker avec accès audio***
 
 Lancer le conteneur Docker avec les options nécessaires pour l’audio, PulseAudio et les périphériques USB :
 
