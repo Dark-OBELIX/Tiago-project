@@ -13,7 +13,7 @@ def say_text(text, lang="fr_FR"):
         queue_size=1
     )
 
-    rospy.sleep(1)  # laisse le temps au publisher de se connecter
+    rospy.sleep(0.5)  # laisse le temps au publisher de se connecter
 
     msg = TtsActionGoal()
     msg.goal.rawtext.text = text
@@ -24,5 +24,5 @@ def say_text(text, lang="fr_FR"):
 
 
 if __name__ == "__main__":
-    say_text("bonjour arnaud")
+    say_text(".   bonjour arnaud")
 
