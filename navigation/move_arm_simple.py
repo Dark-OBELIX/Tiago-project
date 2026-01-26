@@ -1,16 +1,13 @@
 #!/usr/bin/env python3
 """
-Script simple pour bouger le bras droit ou gauche du robot TiaGo
-Utilisation : python3 move_arm_simple.py [left|right] [1|2]
-Exemple : python3 move_arm_simple.py left 1
+Script pour bouger le bras droit ou gauche du robot TiaGo
+Utilisation : python3 move_arm_simple.py 
+Exemple : python3 move_arm_simple.py 
 """
-import aruco_nav
-from aruco_nav import ArucoDocker
 import rospy
 import moveit_commander
 import sys
 import movegrip
-from Aruco import ArUcoSingleReader
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 class ArmMover:
     def __init__(self):
@@ -23,19 +20,33 @@ class ArmMover:
         self.move_group_arm_right = moveit_commander.MoveGroupCommander("arm_right")
         self.move_group_torso = moveit_commander.MoveGroupCommander("torso")
         print("✓ Robot initialisé")
-    """ def move_head(self, pan=0.0, tilt=0.0):
-        #pan: rotation gauche(+)/droite(-) (head_1_joint)
-        #tilt: inclinaison haut(-)/bas(+) (head_2_joint)
+    def move_head(self, yaw, pitch, duration=2.0):
+        """
+        Bouge la tête de TIAGo
+
+        :param yaw: rotation gauche/droite (rad) → head_1_joint
+        :param pitch: haut/bas (rad) → head_2_joint
+        :param duration: durée du mouvement (s)
+        """
+
+        pub = rospy.Publisher(
+            '/head_controller/command',
+            JointTrajectory,
+            queue_size=1
+        )
+
+        rospy.sleep(0.5)  # laisser le temps au publisher de se connecter
+
         traj = JointTrajectory()
         traj.joint_names = ['head_1_joint', 'head_2_joint']
-        
+
         point = JointTrajectoryPoint()
-        point.positions = [pan, tilt]
-        point.time_from_start = rospy.Duration(1.0) # Le mouvement prendra 1 seconde
-        
+        point.positions = [yaw, pitch]
+        point.time_from_start = rospy.Duration(duration)
+
         traj.points.append(point)
-        self.head_pub.publish(traj)
-        rospy.loginfo(f"Commande tête envoyée : pan={pan}, tilt={tilt}") """
+
+        pub.publish(traj)
     def count(self):
         self.counter+=1
     def move_torso(self, niveau):
@@ -66,7 +77,7 @@ class ArmMover:
             3: {
                 "left": [1.28, 0.1, 1.44, 
                           1.73, -1.59, -1.33, -0.16],
-                "right": [1.28, 0.1, 1.44, 
+                "right": [1.28, 0.2, 1.44, 
                           1.73, -1.59, -1.33, -0.16]
             },
             4: {
@@ -89,8 +100,8 @@ class ArmMover:
             },
             7: {"left": [-1.11, 1.49, 2.81, 
                           1.65, 1.61, -0.95, -1.87],
-                "right": [-1.11, 1.49, 2.81, 
-                          1.65, 1.61, -0.95, -1.87]}
+                "right": [0.21, -0.05, 1.51, 
+                          1.71, -1.38, 1.31, 0.0]}
         }
         
         if arm not in ["left", "right"]:
@@ -118,31 +129,9 @@ class ArmMover:
         move_group.stop()
         
         print(f"✓ Bras {arm.upper()} déplacé avec succès!")
-        
-        # Exécuter movegrip après le déplacement du bras
-        print("Exécution de movegrip...")
-        """ if position == 1:
-            movegrip.move_gripper(arm,2)  # Ouvrir la pince en position de repos
-        if position in [2, 3, 4]:
-            movegrip.move_gripper(arm,2)  # Fermer la pince pour saisir
-        elif position == 6:
-            movegrip.move_gripper(arm,2)  # Ouvrir la pince pour regarder """
-        """ else:
-            movegrip.move_gripper(arm, position) """
-        
         return True
 
 def pick_grab():
-    """ detection = ArUcoSingleReader()
-    detection.get_id(timeout=5.0)
-    position = detection.get_id()
-    print("IDs détectés :", position)
-    if position in [24,25,26]:
-        print("Marqueur détecté pour la position :", position)
-        position = position - 22  # Convertir 24,25,26 en 2,3,4
-    else: 
-        position = position
-    print("Position détectée :", position) """
     move = ArmMover()
     move.move_arm('right', 7)
     if move.position == 4 : 
@@ -153,8 +142,13 @@ def pick_grab():
         move.move_torso('neutral')
     move.move_arm('right', 3)
     movegrip.move_gripper('right', 2)  # Fermer la pince pour saisir
+    rospy.sleep(2)
     move.move_arm('right', 4)
     move.move_arm('right', 5)
+    move.move_head(0,-0.35)
+    rospy.sleep(4)
+    move.move_head(0,0)
+    #move.move_arm('right', 1)
     move.position-=1
 def homing():
     mover = ArmMover()
@@ -163,13 +157,17 @@ def homing():
     mover.move_torso('neutral')
 def main():
     if len(sys.argv) < 3:
-        print("Usage : python3 move_arm_simple.py [left|right] [1|2]")
+        print("Usage : python3 move_arm_simple.py [left|right] [1|3|4|5|6|7]")
         print("Exemples :")
         print("  python3 move_arm_simple.py left 1")
         print("  python3 move_arm_simple.py right 2")
         print("\nPositions disponibles :")
         print("  1 : Position de repos (bas)")
-        print("  2 : Position intermédiaire (saisie)")
+        print("  3 : Position saisir au milieu")
+        print("  4 : Position tirer vers soi")
+        print("  5 : Position regarder bras")
+        print("  6 : Position déposer")
+        print("  7 : Position intermédiaire")
         sys.exit(1)
     
     arm = sys.argv[1].lower()
@@ -186,15 +184,6 @@ def main():
         print("❌ Nœud arrêté")
 
 if __name__ == "__main__":
-    try:
-        node = ArucoDocker()
-        rospy.spin()
-    except rospy.ROSInterruptException:
-        pass
-    finally:
-        cv2.destroyAllWindows()
     pick_grab()
     #homing()
-    """ move = ArmMover()
-    move.move_head(pan=0.0, tilt=-0.5) """
     #main()
