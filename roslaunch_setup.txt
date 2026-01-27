@@ -1,0 +1,247 @@
+========================================================
+DOCUMENTATION — BRINGUP GLOBAL & STATE MACHINE TIAGO
+ROS Noetic
+========================================================
+
+OBJECTIF
+--------
+
+Mettre en place un lancement global unique (roslaunch) pour le robot TIAGo
+permettant de :
+
+- lancer plusieurs briques ROS (audio, state machine, etc.)
+- centraliser le démarrage du système
+- disposer d’un node maître (state machine)
+- faire parler le robot via le TTS PAL Robotics
+
+Un robot = une seule commande roslaunch.
+
+
+PRINCIPE GÉNÉRAL
+----------------
+
+On sépare clairement :
+
+- le code métier (logique, FSM, actions)
+- l’orchestration ROS (launch files)
+- le bringup (point d’entrée unique du robot)
+
+Le main.py du projet original n’est PAS lancé directement par roslaunch.
+Un node dédié (state_machine.py) joue le rôle de cerveau.
+
+
+STRUCTURE FINALE
+----------------
+
+~/catkin_ws/
+├── src/
+│   ├── Tiago-project/              (repo original, non modifié)
+│   └── tiago_bringup/              (package ROS bringup)
+│       ├── launch/
+│       │   ├── bringup.launch
+│       │   ├── audio.launch
+│       │   └── state_machine.launch
+│       ├── scripts/
+│       │   └── state_machine.py
+│       ├── CMakeLists.txt
+│       └── package.xml
+
+
+ÉTAPE 1 — CRÉATION DU WORKSPACE CATKIN
+-------------------------------------
+
+Le projet Tiago-project n’était pas initialement dans un workspace ROS.
+
+Commandes :
+
+mkdir -p ~/catkin_ws/src
+mv ~/Tiago-project ~/catkin_ws/src/
+cd ~/catkin_ws
+catkin_make
+source devel/setup.bash
+
+
+ÉTAPE 2 — CRÉATION DU PACKAGE BRINGUP
+------------------------------------
+
+cd ~/catkin_ws/src
+catkin_create_pkg tiago_bringup rospy std_msgs
+
+Ce package contient :
+- les launch files
+- le node maître (state machine)
+
+
+ÉTAPE 3 — LAUNCH AUDIO
+----------------------
+
+Fichier : tiago_bringup/launch/audio.launch
+
+<launch>
+  <arg name="device" default="plughw:0,0"/>
+
+  <include file="$(find audio_capture)/launch/capture.launch">
+    <arg name="device" value="$(arg device)"/>
+  </include>
+</launch>
+
+Ce fichier encapsule proprement la capture audio et permet
+de configurer le device via des arguments.
+
+
+ÉTAPE 4 — STATE MACHINE (NODE MAÎTRE)
+------------------------------------
+
+Rôle :
+- cerveau du robot
+- point d’entrée logique
+- interface avec TTS, audio, navigation, etc.
+
+Fichier : tiago_bringup/scripts/state_machine.py
+
+#!/usr/bin/env python3
+import rospy
+from pal_interaction_msgs.msg import TtsActionGoal
+
+
+class TiagoMain:
+
+    def __init__(self):
+        rospy.init_node("state_machine")
+
+        rospy.loginfo("TIAGO state_machine démarré")
+
+        self.tts_pub = rospy.Publisher(
+            "/tts/goal",
+            TtsActionGoal,
+            queue_size=1
+        )
+
+        rospy.loginfo("Attente du serveur TTS...")
+        while self.tts_pub.get_num_connections() == 0 and not rospy.is_shutdown():
+            rospy.sleep(0.1)
+
+        rospy.loginfo("TTS connecté")
+        self.say("Bonjour Arnaud. Le système est prêt.")
+
+    def say(self, text, lang="fr_FR"):
+        msg = TtsActionGoal()
+        msg.goal.rawtext.text = text
+        msg.goal.rawtext.lang_id = lang
+        self.tts_pub.publish(msg)
+        rospy.loginfo("TTS envoyé : %s", text)
+
+
+if __name__ == "__main__":
+    TiagoMain()
+    rospy.spin()
+
+
+POINTS IMPORTANTS :
+- un seul rospy.init_node()
+- publisher persistant
+- attente réelle du serveur TTS (évite les race conditions)
+- compatible roslaunch
+
+
+ÉTAPE 5 — LAUNCH DE LA STATE MACHINE
+-----------------------------------
+
+Fichier : tiago_bringup/launch/state_machine.launch
+
+<launch>
+  <node pkg="tiago_bringup"
+        type="state_machine.py"
+        name="state_machine"
+        output="screen"
+        respawn="true"/>
+</launch>
+
+
+ÉTAPE 6 — LAUNCH GLOBAL (BRINGUP)
+--------------------------------
+
+Fichier : tiago_bringup/launch/bringup.launch
+
+<launch>
+  <arg name="device" default="plughw:0,0"/>
+  <arg name="use_audio" default="true"/>
+  <arg name="use_state_machine" default="true"/>
+
+  <!-- Audio -->
+  <group if="$(arg use_audio)">
+    <include file="$(find tiago_bringup)/launch/audio.launch">
+      <arg name="device" value="$(arg device)"/>
+    </include>
+  </group>
+
+  <!-- State machine -->
+  <group if="$(arg use_state_machine)">
+    <include file="$(find tiago_bringup)/launch/state_machine.launch"/>
+  </group>
+</launch>
+
+Avantages :
+- activation/désactivation des modules par arguments
+- extensible (navigation, vision, bras, etc.)
+- une seule commande pour lancer le robot
+
+
+ÉTAPE 7 — CMakeLists.txt
+-----------------------
+
+Déclaration du script Python :
+
+catkin_install_python(PROGRAMS
+  scripts/state_machine.py
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+
+UTILISATION
+-----------
+
+Lancer tout le système :
+roslaunch tiago_bringup bringup.launch
+
+Lancer sans l’audio :
+roslaunch tiago_bringup bringup.launch use_audio:=false
+
+
+VÉRIFICATIONS UTILES
+-------------------
+
+Lister les nodes :
+rosnode list
+
+Résultat attendu :
+/state_machine
+/audio/audio_capture   (si audio activé)
+
+Lister les topics TTS :
+rostopic list | grep tts
+
+
+RÉSUMÉ CONCEPTUEL
+-----------------
+
+- tiago_bringup : orchestration
+- bringup.launch : point d’entrée unique
+- state_machine.py : cerveau du robot
+- /tts/goal : synthèse vocale
+- audio.launch : capture audio
+
+
+EXTENSIONS FUTURES
+------------------
+
+- FSM complète (IDLE / LISTEN / MOVE / SPEAK)
+- Navigation via move_base
+- Commandes vocales
+- Feedback vocal après action
+- Supervision / watchdog
+- Intégration vision / bras
+
+========================================================
+FIN DU DOCUMENT
+========================================================
