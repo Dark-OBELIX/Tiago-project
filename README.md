@@ -88,3 +88,8 @@ En cas de problèmes lors de l’exécution de scripts Python, il peut être né
 ```bash
 source /opt/ros/noetic/setup.bash
 ```
+
+Avant de démarer chaque conteneur faire dans un terminal sur le pc hote :
+```bash
+xhost +local:
+```
