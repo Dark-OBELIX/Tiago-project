@@ -95,7 +95,7 @@ def image_cb(msg):
 
             allowed = ["angry", "happy", "sad", "neutral"]
             boost = {
-                "angry": 50.0,
+                "angry": 10.0,
                 "sad": 1.0,
                 "happy": 1.0,
                 "neutral": 0.75
