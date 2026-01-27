@@ -93,10 +93,10 @@ class ArmMover:
                           1.88, -2.07, 0.14, -0.18]
             },
             6: {
-                "left": [0.9421578142999586, 0.35, 1.4010525892851553, 
-                          2.2242633924991946, -1.6781702963473467, -1.3937755123985682, -2.0],
-                "right": [0.9421578142999586, 0.35, 1.4010525892851553, 
-                          2.2242633924991946, -1.6781702963473467, -1.3937755123985682, -2.0]
+                "left": [1.13, -0.21, 2.08, 
+                          0.8, -0.82, 0.08, -0.02],
+                "right": [1.13, -0.21, 2.08, 
+                          0.8, -0.82, 0.08, -0.02]
             },
             7: {"left": [-1.11, 1.49, 2.81, 
                           1.65, 1.61, -0.95, -1.87],
@@ -130,6 +130,13 @@ class ArmMover:
         
         print(f"✓ Bras {arm.upper()} déplacé avec succès!")
         return True
+    def deposer(self,arm):
+        move = ArmMover()
+        move.move_arm(arm, 6)
+        move.move_torso('neutral')
+        movegrip.move_gripper(arm, 1)  # Ouvrir la pince pour déposer
+        rospy.sleep(2)
+
 
 def pick_grab():
     move = ArmMover()
@@ -148,6 +155,7 @@ def pick_grab():
     move.move_head(0,-0.35)
     rospy.sleep(4)
     move.move_head(0,0)
+    move.deposer('right')
     #move.move_arm('right', 1)
     move.position-=1
 def homing():
@@ -184,6 +192,6 @@ def main():
         print("❌ Nœud arrêté")
 
 if __name__ == "__main__":
-    pick_grab()
+    #pick_grab()
     #homing()
-    #main()
+    main()
