@@ -145,4 +145,4 @@ def main(position):
     move.move_head(0,-0.35)
 
 if __name__ == "__main__":
-    main(3)
+    main(1)
