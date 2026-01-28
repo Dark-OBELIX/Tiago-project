@@ -192,6 +192,6 @@ def main():
         print("❌ Nœud arrêté")
 
 if __name__ == "__main__":
-    #pick_grab()
+    pick_grab()
     #homing()
-    main()
+    #main()
