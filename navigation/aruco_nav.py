@@ -12,6 +12,7 @@ from cv_bridge import CvBridge, CvBridgeError
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import Twist
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 import tf.transformations as tf_trans
 import tf2_ros
 
@@ -66,6 +67,7 @@ class ArucoDocker:
         
         # Publishers / Subscribers
         self.vel_pub = rospy.Publisher(self.cmd_vel_topic, Twist, queue_size=1)
+        self.head_pub = rospy.Publisher('/head_controller/command', JointTrajectory, queue_size=1)
         self.image_sub = rospy.Subscriber(self.camera_topic, Image, self.image_callback)
         
         # Move Base
@@ -240,10 +242,24 @@ class ArucoDocker:
         self.state = "NAV_APPROACH"
         self.client.send_goal(goal, done_cb=self.done_cb)
 
+    def look_forward(self):
+        rospy.loginfo("Positionnement de la tete : REGARDER DEVANT")
+        traj = JointTrajectory()
+        traj.joint_names = ["head_1_joint", "head_2_joint"]
+        
+        p = JointTrajectoryPoint()
+        p.positions = [0.0, 0.0] # Pan = 0, Tilt = 0
+        p.velocities = [0.0, 0.0]
+        p.time_from_start = rospy.Duration(1.0)
+        
+        traj.points = [p]
+        self.head_pub.publish(traj)
+
     def done_cb(self, status, result):
         if status == 3: # SUCCEEDED
             rospy.loginfo("MoveBase fini. Passage en mode SERVOING VISUEL.")
-            rospy.sleep(0.5)
+            self.look_forward() # Relever la tete
+            rospy.sleep(1.0) # Attendre que la tete bouge
             self.state = "VISUAL_SERVOING"
         else:
             rospy.logwarn("Echec MoveBase. Reset.")
