@@ -135,7 +135,6 @@ def main(position):
     move.move_arm('right', 4)
     move.move_head(0,-0.35)
     rospy.sleep(4)
-    move.move_head(0,0)
 
 if __name__ == "__main__":
     main(3)
