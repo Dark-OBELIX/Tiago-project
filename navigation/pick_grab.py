@@ -52,7 +52,7 @@ class pick_grab:
         level = {
             "high": [0.28],
             "neutral":[0.2],
-            "low":[0.135]
+            "low":[0.14]
         }
         torso_move = self.move_group_torso
         torso_move.clear_pose_targets()
