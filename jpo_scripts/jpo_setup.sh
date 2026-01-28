@@ -34,9 +34,9 @@ sleep 3 # Pause pour laisser la carte se publier
 echo "[3/4] Réduction des marges de sécurité (Inflation Radius)..."
 
 # Global Costmap (Planification lointaine)
-rosrun dynamic_reconfigure dynparam set /move_base/global_costmap/inflation_layer inflation_radius 0.35
+rosrun dynamic_reconfigure dynparam set /move_base/global_costmap/inflation_layer inflation_radius 0.2
 # Local Costmap (Évitement immédiat)
-rosrun dynamic_reconfigure dynparam set /move_base/local_costmap/inflation_layer inflation_radius 0.30
+rosrun dynamic_reconfigure dynparam set /move_base/local_costmap/inflation_layer inflation_radius 0.15
 
 echo " -> Inflation Radius réduit à 0.35m (Global) et 0.30m (Local)"
 
