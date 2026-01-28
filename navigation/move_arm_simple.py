@@ -68,7 +68,7 @@ class ArmMover:
         position: 1 ou 2
         """
         # Positions prédéfinies
-        """1 repos, 3 attraper milieu,4 tirer, 5 regarder bras, 6 déposer, 7 position intermediaire"""
+        """1 repos, 3 attraper milieu,4 tirer, 5 regarder bras, 6 déposer, 7 position intermediaire, 8 deposer from bras"""
         positions = {
             1: {
                 "left": [-1.1001652770191288, 1.4679210480602556, 2.7139581408352638, 1.7092685314029974, -1.5709013012901742, 1.36994880082998, 0.00016342434524205425],
@@ -87,21 +87,29 @@ class ArmMover:
                           2.23, -1.58, -1.39, -0.17]
             },
             5: {
-                "left": [0.9421578142999586,-0.21311409590575092, 1.4010525892851553, 
-                         2.2242633924991946, 0.0, 0, 1.0],
+                "left": [0.79, -0.4, 1.39,
+                          1.88, -2.07, 0.14, -0.18],
                 "right": [0.79, -0.4, 1.39,
                           1.88, -2.07, 0.14, -0.18]
             },
             6: {
-                "left": [1.13, -0.21, 2.08, 
-                          0.8, -0.82, 0.08, -0.02],
-                "right": [1.13, -0.21, 2.08, 
-                          0.8, -0.82, 0.08, -0.02]
+                "left": [1.42, -0.04, -0.12, 
+                          0.21, -1.12, -0.4, -0.03],
+                "right": [1.42, -0.04, -0.12, 
+                          0.21, -1.12, -0.4, -0.03]
             },
-            7: {"left": [-1.11, 1.49, 2.81, 
-                          1.65, 1.61, -0.95, -1.87],
+            7: {"left": [0.21, -0.05, 1.51, 
+                          1.71, -1.38, 1.31, 0.0],
                 "right": [0.21, -0.05, 1.51, 
-                          1.71, -1.38, 1.31, 0.0]}
+                          1.71, -1.38, 1.31, 0.0]},
+            8: {"left": [0.79, -0.03, -0.13, 
+                          1.49, -0.86, 0.04, -0.03],
+                "right": [0.79, -0.03, -0.13, 
+                          1.49, -0.86, 0.04, -0.03]},
+            9: {"left": [1.42, -0.03, -0.13, 
+                          1.49, -0.86, 0.04, -0.03],
+                "right": [1.42, -0.03, -0.13, 
+                          1.49, -0.86, 0.04, -0.03]},
         }
         
         if arm not in ["left", "right"]:
@@ -132,10 +140,14 @@ class ArmMover:
         return True
     def deposer(self,arm):
         move = ArmMover()
+        move.move_arm(arm, 8)
         move.move_arm(arm, 6)
         move.move_torso('neutral')
         movegrip.move_gripper(arm, 1)  # Ouvrir la pince pour déposer
         rospy.sleep(2)
+        move.move_arm(arm, 8)
+        move.move_arm('right', 1)
+        movegrip.move_gripper('right', 1)  # Ouvrir la pince en position de repos
 
 
 def pick_grab():
@@ -155,8 +167,8 @@ def pick_grab():
     move.move_head(0,-0.35)
     rospy.sleep(4)
     move.move_head(0,0)
+    move.move_arm('right', 9)
     move.deposer('right')
-    #move.move_arm('right', 1)
     move.position-=1
 def homing():
     mover = ArmMover()
@@ -192,6 +204,6 @@ def main():
         print("❌ Nœud arrêté")
 
 if __name__ == "__main__":
-    #pick_grab()
+    pick_grab()
     #homing()
-    main()
+    #main()
