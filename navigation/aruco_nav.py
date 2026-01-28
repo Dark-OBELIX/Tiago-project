@@ -35,7 +35,7 @@ class ArucoDocker:
 
         # --- REGLAGES UTILISATEUR ---
         self.marker_size = 0.164
-        self.target_dist = 0.44   # Distance finale souhaitée
+        self.target_dist = 0.60   # Distance finale souhaitée
         self.approach_dist = 0.90 # Distance de fin move_base / début servoing
         
         # CORRECTION DU DECALAGE "TROP A DROITE"
