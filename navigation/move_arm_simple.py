@@ -68,7 +68,7 @@ class ArmMover:
         position: 1 ou 2
         """
         # Positions prédéfinies
-        """1 repos, 3 attraper milieu,4 tirer, 5 regarder bras, 6 déposer, 7 position intermediaire"""
+        """1 repos, 3 attraper milieu,4 tirer, 5 regarder bras, 6 déposer, 7 position intermediaire, 8 deposer from bras"""
         positions = {
             1: {
                 "left": [-1.1001652770191288, 1.4679210480602556, 2.7139581408352638, 1.7092685314029974, -1.5709013012901742, 1.36994880082998, 0.00016342434524205425],
@@ -101,7 +101,11 @@ class ArmMover:
             7: {"left": [-1.11, 1.49, 2.81, 
                           1.65, 1.61, -0.95, -1.87],
                 "right": [0.21, -0.05, 1.51, 
-                          1.71, -1.38, 1.31, 0.0]}
+                          1.71, -1.38, 1.31, 0.0]},
+            8: {"left": [1.42, -0.03, -0.13, 
+                          1.49, -0.86, 0.04, -0.03],
+                "right": [1.42, -0.03, -0.13, 
+                          1.49, -0.86, 0.04, -0.03]}
         }
         
         if arm not in ["left", "right"]:
@@ -132,6 +136,7 @@ class ArmMover:
         return True
     def deposer(self,arm):
         move = ArmMover()
+        move.move_arm(arm, 8)
         move.move_arm(arm, 6)
         move.move_torso('neutral')
         movegrip.move_gripper(arm, 1)  # Ouvrir la pince pour déposer
