@@ -141,6 +141,9 @@ class ArmMover:
         move.move_torso('neutral')
         movegrip.move_gripper(arm, 1)  # Ouvrir la pince pour déposer
         rospy.sleep(2)
+        move.move_arm(arm, 8)
+        move.move_arm('right', 1)
+        movegrip.move_gripper('right', 1)  # Ouvrir la pince en position de repos
 
 
 def pick_grab():
@@ -161,7 +164,6 @@ def pick_grab():
     rospy.sleep(4)
     move.move_head(0,0)
     move.deposer('right')
-    #move.move_arm('right', 1)
     move.position-=1
 def homing():
     mover = ArmMover()
