@@ -50,7 +50,7 @@ class pick_grab:
         - low
         """
         level = {
-            "high": [0.265],
+            "high": [0.28],
             "neutral":[0.2],
             "low":[0.135]
         }
@@ -75,7 +75,7 @@ class pick_grab:
         """
         positions = {
             1: {
-                "right": [0.21, -0.05, 1.51, 
+                "right": [0.21, 0.2, 1.51, 
                           1.71, -1.38, 1.31, 0.0]},
             2: {
                 "right": [1.28, 0.2, 1.44, 
@@ -134,7 +134,6 @@ def main(position):
     move.move_arm('right', 3)
     move.move_arm('right', 4)
     move.move_head(0,-0.35)
-    rospy.sleep(4)
 
 if __name__ == "__main__":
     main(3)
