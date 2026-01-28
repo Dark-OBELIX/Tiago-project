@@ -31,6 +31,7 @@ class ArmMover:
         # Bouger le bras
         move_group.go(joint_values, wait=True)
         move_group.stop()
+        movegrip.move_gripper('right', 1)
         
         return True
 
