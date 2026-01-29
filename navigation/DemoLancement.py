@@ -1,6 +1,6 @@
 
 
-from brochuretest import BrochureDetector
+""" from brochuretest import BrochureDetector
 import rospy
 from sensor_msgs.msg import Image
 from cv_bridge import CvBridge
@@ -21,8 +21,8 @@ def verifier_couleur_robot():
 # --- Dans ta boucle de stock ---
 couleur_robot = verifier_couleur_robot()
 if couleur_robot == "bleu":
-    print("C'est bon !")
-""" import os
+    print("C'est bon !") """
+import os
 import random
 #from pick_grab import pick_grab
 #from verif_jeter import ArmMover as ArmMoverJeter
@@ -85,4 +85,3 @@ else:
     os.system("python jeter_homing.py")
 
 print("Stocks restants :", stocks)
- """
