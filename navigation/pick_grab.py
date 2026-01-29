@@ -140,6 +140,7 @@ class pick_grab:
             return
         else : 
             move.move_torso('neutral')
+        move.move_arm('right', 3)
         move.move_arm('right', 2)
         movegrip.move_gripper('right', 2)  # Fermer la pince pour saisir
         rospy.sleep(2)
