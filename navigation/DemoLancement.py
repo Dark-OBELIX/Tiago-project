@@ -64,12 +64,11 @@ if stocks[couleur] == 0:
 
 # --- Pick ---
 if stocks[couleur] == 3:
-    os.system("python Tiago-project/navigation/pick_grab.py 3")
+    os.system("python pick_grab.py 3")
 elif stocks[couleur] == 2:
-    os.system("python Tiago-project/navigation/pick_grab.py 2")
+    os.system("python pick_grab.py 2")
 else:
-    os.system("python Tiago-project/navigation/pick_grab.py 1")
-
+    os.system("python pick_grab.py 1")
 # --- Simulation vérification couleur ---
 bonne_couleur = random.choice([True, False])
 
