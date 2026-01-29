@@ -1,7 +1,10 @@
+from ast import main
 import rospy
 import moveit_commander
 import movegrip
 from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
+import sys
+
 class pick_grab:
     def __init__(self):
         """
@@ -146,4 +149,17 @@ class pick_grab:
         move.move_head(0,-0.35)
 
 if __name__ == "__main__":
-    main(1)
+    if len(sys.argv) != 2:
+        print("Usage : rosrun <package> <script.py> <1|2|3>")
+        sys.exit(1)
+
+    try:
+        position = int(sys.argv[1])
+        if position not in [1, 2, 3]:
+            raise ValueError
+    except ValueError:
+        print("❌ L’argument doit être un entier : 1, 2 ou 3")
+        sys.exit(1)
+
+    move = pick_grab()
+    move.main(position)

@@ -1,12 +1,12 @@
 import os
 import random
-from pick_grab import pick_grab
-from verif_jeter import ArmMover as ArmMoverJeter
-from verif_deposer_client import ArmMover as ArmMoverDepositer
-from jeter_homing import ArmMover as ArmMoverJeter_homing
-jeter = ArmMoverJeter()  
-deposer = ArmMoverDepositer()
-jeter_homing = ArmMoverJeter_homing()
+#from pick_grab import pick_grab
+#from verif_jeter import ArmMover as ArmMoverJeter
+#from verif_deposer_client import ArmMover as ArmMoverDepositer
+#from jeter_homing import ArmMover as ArmMoverJeter_homing
+#jeter = ArmMoverJeter()  
+#deposer = ArmMoverDepositer()
+#jeter_homing = ArmMoverJeter_homing()
 stocks = {
     "bleu": 3,
     "jaune": 3,
@@ -39,21 +39,25 @@ if stocks[couleur] == 0:
     exit()
 
 # --- Pick ---
-pick = pick_grab()
-pick.main(stocks[couleur])
+if stocks[couleur] == 3:
+    os.system("python Tiago-project/navigation/pick_grab.py 3")
+elif stocks[couleur] == 2:
+    os.system("python Tiago-project/navigation/pick_grab.py 2")
+else:
+    os.system("python Tiago-project/navigation/pick_grab.py 1")
 
 # --- Simulation vérification couleur ---
 bonne_couleur = random.choice([True, False])
 
 if bonne_couleur:
+    os.system(f"python verif_deposer_client.py {couleur}")
     print(f"navigation vers la zone de dépôt pour la couleur {couleur}")
-    deposer.move_arm()
-    jeter_homing.move_arm()
+    os.system("python jeter_homing.py")
     stocks[couleur] -= 1
     print(f"✅ Bonne couleur prise : {couleur}")
 else:
-    jeter.move_arm()
-    jeter_homing.move_arm()
+    os.system("python verif_jeter.py")
     print(f"❌ Mauvaise couleur prise (attendu : {couleur})")
+    os.system("python jeter_homing.py")
 
 print("Stocks restants :", stocks)
