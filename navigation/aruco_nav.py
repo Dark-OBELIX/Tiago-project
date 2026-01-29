@@ -107,11 +107,12 @@ class ArucoDocker:
         return angle
 
     def image_callback(self, data):
+        if self.state == "DONE":
+            return
         try:
             cv_image = self.bridge.imgmsg_to_cv2(data, "bgr8")
         except CvBridgeError:
             return
-
         gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
         corners, ids, _ = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.aruco_params)
         
@@ -162,7 +163,7 @@ class ArucoDocker:
         
         # Affichage
         #cv2.imshow("Docking View", cv_image)
-        cv2.waitKey(3)
+        #cv2.waitKey(3)
 
     def perform_search_scan(self):
         # Comportement de recherche: Scan 180 degres devant
@@ -286,6 +287,7 @@ class ArucoDocker:
             rospy.loginfo("Position atteinte ! Arret.")
             self.stop_robot()
             self.state = "DONE"
+            rospy.signal_shutdown("Travail termine")
             return
 
         # --- LOI DE COMMANDE (P-CONTROLLER) ---
