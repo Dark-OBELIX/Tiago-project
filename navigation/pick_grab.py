@@ -1,4 +1,3 @@
-from ast import main
 import rospy
 import moveit_commander
 import movegrip
