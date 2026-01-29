@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="tiago_bringup"
+        type="state_machine.py"
+        name="state_machine"
+        output="screen"
+        respawn="true"/>
+</launch>

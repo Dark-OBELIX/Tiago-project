@@ -1,0 +1,7 @@
+<launch>
+  <arg name="device" default="plughw:0,0"/>
+
+  <include file="$(find audio_capture)/launch/capture.launch">
+    <arg name="device" value="$(arg device)"/>
+  </include>
+</launch>

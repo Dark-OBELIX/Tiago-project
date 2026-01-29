@@ -1,0 +1,9 @@
+<launch>
+  <arg name="device" default="plughw:0,0"/>
+  <arg name="use_state_machine" default="true"/>
+
+  <!-- State machine -->
+  <group if="$(arg use_state_machine)">
+    <include file="$(find tiago_bringup)/launch/state_machine.launch"/>
+  </group>
+</launch>
