@@ -7,7 +7,7 @@ from cv_bridge import CvBridge
 from ultralytics import YOLO
 
 class BrochureDetector:
-    def __init__(self, model_path="best_brochure.pt", conf_threshold=0.55):
+    def __init__(self, model_path="../video/best_brochure.pt", conf_threshold=0.55):
         # Configuration
         self.bridge = CvBridge()
         self.conf_threshold = conf_threshold
