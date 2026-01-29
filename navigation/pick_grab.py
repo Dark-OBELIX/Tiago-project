@@ -51,8 +51,8 @@ class pick_grab:
         """
         level = {
             "high": [0.28],
-            "neutral":[0.2],
-            "low":[0.145]
+            "neutral":[0.21],
+            "low":[0.150]
         }
         torso_move = self.move_group_torso
         torso_move.clear_pose_targets()
@@ -119,31 +119,31 @@ class pick_grab:
         
         print(f"✓ Bras {arm.upper()} déplacé avec succès!")
         return True
-def main(position):
-    move = pick_grab()
-    move.move_arm('right', 1)
-    if position == 3 : 
-        move.move_torso('high')
-    elif position == 1:
-        move.move_torso('neutral')
-        move.move_arm('right', 3)
-        move.move_torso('low')
-        rospy.sleep(1)
+    def main(self,position):
+        move = pick_grab()
+        move.move_arm('right', 1)
+        if position == 3 : 
+            move.move_torso('high')
+        elif position == 1:
+            move.move_torso('neutral')
+            move.move_arm('right', 3)
+            move.move_torso('low')
+            rospy.sleep(1)
+            move.move_arm('right', 2)
+            movegrip.move_gripper('right', 2)  # Fermer la pince pour saisir
+            rospy.sleep(2)
+            move.move_arm('right', 3)
+            move.move_arm('right', 4)
+            move.move_head(0,-0.35)
+            return
+        else : 
+            move.move_torso('neutral')
         move.move_arm('right', 2)
         movegrip.move_gripper('right', 2)  # Fermer la pince pour saisir
         rospy.sleep(2)
         move.move_arm('right', 3)
         move.move_arm('right', 4)
         move.move_head(0,-0.35)
-        return
-    else : 
-        move.move_torso('neutral')
-    move.move_arm('right', 2)
-    movegrip.move_gripper('right', 2)  # Fermer la pince pour saisir
-    rospy.sleep(2)
-    move.move_arm('right', 3)
-    move.move_arm('right', 4)
-    move.move_head(0,-0.35)
 
 if __name__ == "__main__":
     main(1)
