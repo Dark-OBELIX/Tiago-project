@@ -76,7 +76,7 @@ bonne_couleur = random.choice([True, False])
 if bonne_couleur:
     os.system(f"python verif_deposer_client.py {couleur}")
     print(f"navigation vers la zone de dépôt pour la couleur {couleur}")
-    os.system("python jeter_homing.py")
+    #os.system("python jeter_homing.py")
     stocks[couleur] -= 1
     print(f"✅ Bonne couleur prise : {couleur}")
 else:
