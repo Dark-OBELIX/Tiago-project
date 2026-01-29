@@ -9,6 +9,12 @@ Ce document décrit la configuration et l’installation nécessaires pour utili
 Documentation d’origine :
 [https://github.com/CESI-Robotics-Bdx-2425/Documentation/blob/master/INSTALL.md](https://github.com/CESI-Robotics-Bdx-2425/Documentation/blob/master/INSTALL.md)
 
+Documentation video :
+[https://github.com/yousssef-masmoudi/test-BROCHURE/tree/master]
+
+Documentation audio :
+[https://github.com/midnightmoon14/TIAGO-Traitement-Audio/tree/master]
+
 ---
 
 ## Configuration Docker
