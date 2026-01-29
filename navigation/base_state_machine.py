@@ -56,7 +56,7 @@ def main():
                                ),
                                # ICI on fait le lien : target_pose_list <-- point_depart
                                remapping={'target_pose_list': 'point_depart'},
-                               transitions={'succeeded': 'ALLER_RETOUR', 
+                               transitions={'succeeded': 'SUCCESS', 
                                             'aborted': 'FAILURE', 
                                             'preempted': 'FAILURE'}
                                )
