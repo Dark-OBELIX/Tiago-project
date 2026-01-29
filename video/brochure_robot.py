@@ -63,10 +63,15 @@ def main():
             color = get_color_name(latest_frame[y1:y2, x1:x2])
             
             if color != "inconnu":
-                rospy.loginfo(f"Trouvé ! Couleur: {color}. Envoi et fermeture...")
-                pub.publish(color) # Envoi de la couleur sur ROS
-                rospy.sleep(1.0)   # Petit délai pour laisser ROS envoyer le message
-                found = True
+                rospy.loginfo(f"Couleur trouvée : {color}")
+                
+                # 1. On le met dans le serveur de paramètres (STOCKAGE)
+                rospy.set_param('/brochure_color', color)
+                
+                # 2. On peut aussi le publier sur le topic si besoin (LIVE)
+                pub.publish(color)
+                
+                found = True # Arrête le script
         
         rate.sleep()
 
