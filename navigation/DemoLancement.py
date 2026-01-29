@@ -1,36 +1,5 @@
-
-
-""" from brochuretest import BrochureDetector
-import rospy
-from sensor_msgs.msg import Image
-from cv_bridge import CvBridge
-
-# 1. Initialise le détecteur au début
-detector = BrochureDetector()
-
-def verifier_couleur_robot():
-    # 2. On attend une seule image du topic
-    msg = rospy.wait_for_message("/xtion/rgb/image_raw", Image)
-    bridge = CvBridge()
-    frame = bridge.imgmsg_to_cv2(msg, "bgr8")
-
-    # 3. On demande à la classe d'analyser l'image
-    _, couleur_vue = detector.analyze_frame(frame)
-    return couleur_vue
-
-# --- Dans ta boucle de stock ---
-couleur_robot = verifier_couleur_robot()
-if couleur_robot == "bleu":
-    print("C'est bon !") """
 import os
 import random
-#from pick_grab import pick_grab
-#from verif_jeter import ArmMover as ArmMoverJeter
-#from verif_deposer_client import ArmMover as ArmMoverDepositer
-#from jeter_homing import ArmMover as ArmMoverJeter_homing
-#jeter = ArmMoverJeter()  
-#deposer = ArmMoverDepositer()
-#jeter_homing = ArmMoverJeter_homing()
 stocks = {
     "bleu": 3,
     "jaune": 3,
