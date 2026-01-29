@@ -1,4 +1,8 @@
-import os
+
+from brochuretest import annotate_brochure
+anno, couleur = annotate_brochure()
+print("Couleur détectée :", couleur)
+""" import os
 import random
 #from pick_grab import pick_grab
 #from verif_jeter import ArmMover as ArmMoverJeter
@@ -19,7 +23,7 @@ choix = input("Choisis un numéro (1, 2, 3 ou 4) : ")
 if choix == "1":
     couleur = "bleu"
     print ("navigation vers la zone de pick pour la couleur bleu")
-    os.system("python aruco_nav.py 29")
+    os.system("python aruco_nav.py 26")
 elif choix == "2":
     couleur = "jaune"
     os.system("python aruco_nav.py 30")
@@ -28,7 +32,7 @@ elif choix == "3":
     os.system("python aruco_nav.py 24")
 elif choix == "4":
     couleur = "vert"
-    os.system("python aruco_nav.py")
+    os.system("python aruco_nav.py 29")
 else:
     print("Choix invalide")
     exit()
@@ -61,3 +65,4 @@ else:
     os.system("python jeter_homing.py")
 
 print("Stocks restants :", stocks)
+ """

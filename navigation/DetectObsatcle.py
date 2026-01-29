@@ -1,80 +1,146 @@
 #!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
 import rospy
+import cv2
+import cv2.aruco as aruco
 import numpy as np
 import tf
-from sensor_msgs.msg import PointCloud2
-import sensor_msgs.point_cloud2 as pc2
+from cv_bridge import CvBridge
+from sensor_msgs.msg import Image, CameraInfo
 from moveit_commander import PlanningSceneInterface
 from geometry_msgs.msg import PoseStamped
+from visualization_msgs.msg import Marker
 
-class TablePlaneDetector:
+class TableObstacleDetector:
     def __init__(self):
-        rospy.init_node("table_plane_detector")
+        rospy.init_node("table_obstacle_detector")
 
+        # --- PARAMÈTRES RÉELS ---
+        self.target_ids = [24, 26, 29, 30] 
+        self.marker_length = 0.164  # 16.4cm
+
+        # Dimensions de la table
+        self.table_width = 0.70   
+        self.table_depth = 0.50   
+        self.table_height = 0.76  
+
+        # --- AJUSTEMENT DE L'OFFSET (Correction du vol) ---
+        # Si la table vole de 5cm, mets -0.05. Si elle s'enfonce, mets +0.05.
+        self.offset_z = -0.05 
+        # --------------------------------------------------
+
+        self.bridge = CvBridge()
         self.scene = PlanningSceneInterface()
-        self.tf = tf.TransformListener()
+        self.tf_listener = tf.TransformListener()
+        
+        rospy.loginfo("🧹 Nettoyage de la scène MoveIt...")
+        self.clean_scene()
+        
+        self.aruco_dict = aruco.Dictionary_get(aruco.DICT_4X4_1000)
+        self.aruco_params = aruco.DetectorParameters_create()
 
-        rospy.sleep(2)
-        # Supprime les objets précédents
-        self.scene.remove_world_object()
+        self.camera_matrix = None
+        self.dist_coeffs = None
+        self.box_added = False
 
-        # Subscriber du point cloud de la caméra
-        rospy.Subscriber(
-            "/xtion/depth/points",
-            PointCloud2,
-            self.cloud_cb,
-            queue_size=1
-        )
+        self.marker_pub = rospy.Publisher('/detected_table_marker', Marker, queue_size=10)
+        
+        rospy.loginfo("⏳ En attente de calibration et d'images...")
+        self.cam_info_sub = rospy.Subscriber("/xtion/rgb/camera_info", CameraInfo, self.camera_info_callback)
+        self.image_sub = rospy.Subscriber("/xtion/rgb/image_rect_color", Image, self.image_callback)
 
-        rospy.loginfo("⏳ Waiting for table plane...")
         rospy.spin()
 
-    def cloud_cb(self, cloud):
-        points = []
+    def clean_scene(self):
+        rospy.sleep(1.0) 
+        for name in self.scene.get_known_object_names():
+            self.scene.remove_world_object(name)
+        rospy.loginfo("✨ Scène nettoyée.")
 
-        # Lire tous les points valides
-        for p in pc2.read_points(cloud, field_names=("x", "y", "z"), skip_nans=True):
-            points.append([p[0], p[1], p[2]])
+    def camera_info_callback(self, msg):
+        if self.camera_matrix is None:
+            self.camera_matrix = np.array(msg.K).reshape((3, 3))
+            self.dist_coeffs = np.array(msg.D)
+            rospy.loginfo("✅ Calibration caméra chargée.")
 
-        if len(points) < 500:
+    def image_callback(self, msg):
+        if self.camera_matrix is None or self.box_added:
             return
 
-        pts = np.array(points)
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+        except Exception: return
 
-        # Filtrer selon la hauteur de la table (0.5-1.0 m)
-        pts = pts[(pts[:, 2] > 0.5) & (pts[:, 2] < 1.0)]
-        if len(pts) < 200:
-            return
+        gray = cv2.cvtColor(cv_image, cv2.COLOR_BGR2GRAY)
+        corners, ids, _ = aruco.detectMarkers(gray, self.aruco_dict, parameters=self.aruco_params)
 
-        # Calcul approximatif du plateau de la table
-        table_top_z = np.median(pts[:, 2])
+        if ids is not None:
+            ids_flat = ids.flatten()
+            rvecs, tvecs, _ = aruco.estimatePoseSingleMarkers(corners, self.marker_length, self.camera_matrix, self.dist_coeffs)
 
-        xmin, xmax = np.min(pts[:, 0]), np.max(pts[:, 0])
-        ymin, ymax = np.min(pts[:, 1]), np.max(pts[:, 1])
-        size_x = xmax - xmin
-        size_y = ymax - ymin
+            for i, marker_id in enumerate(ids_flat):
+                if marker_id in self.target_ids:
+                    p = PoseStamped()
+                    p.header.frame_id = msg.header.frame_id
+                    p.header.stamp = rospy.Time(0)
+                    p.pose.position.x = tvecs[i][0][0]
+                    p.pose.position.y = tvecs[i][0][1]
+                    p.pose.position.z = tvecs[i][0][2]
+                    p.pose.orientation.w = 1.0
 
-        # 🔹 Hauteur de la box réduite pour ne pas bloquer le bras
-        size_z = 0.05  # 5 cm d'épaisseur
-        pose_z = table_top_z - size_z / 2  # centre de la box
+                    try:
+                        self.tf_listener.waitForTransform("base_link", p.header.frame_id, rospy.Time(0), rospy.Duration(1.0))
+                        pose_base = self.tf_listener.transformPose("base_link", p)
+                        
+                        self.create_accurate_table(pose_base)
+                        self.box_added = True
+                        
+                        rospy.loginfo("🚀 Table ajoutée. Fermeture...")
+                        rospy.signal_shutdown("Succès")
+                        break
+                    except Exception as e:
+                        rospy.logwarn(f"TF Error: {e}")
 
-        # Définir la pose
-        pose = PoseStamped()
-        pose.header.frame_id = cloud.header.frame_id
-        pose.pose.position.x = (xmin + xmax) / 2
-        pose.pose.position.y = (ymin + ymax) / 2
-        pose.pose.position.z = pose_z
-        pose.pose.orientation.w = 1.0  # pas de rotation
+    def create_accurate_table(self, marker_pose):
+        mx = marker_pose.pose.position.x
+        my = marker_pose.pose.position.y
 
-        # Ajouter la box dans MoveIt!
-        self.scene.add_box("table", pose, (size_x, size_y, size_z))
-        rospy.loginfo(f"✅ Table collision box added at z={pose_z:.2f} m, size_z={size_z:.2f} m")
+        size_x = self.table_width
+        size_y = self.table_depth
+        size_z = self.table_height 
 
-        # Sleep rapide pour que MoveIt! reçoive bien la box
-        rospy.sleep(1)
+        table_pose = PoseStamped()
+        table_pose.header.frame_id = "base_link"
+        table_pose.pose.position.x = mx 
+        table_pose.pose.position.y = my
+        
+        # Application de l'OFFSET pour corriger le "vol"
+        # On calcule le centre (Z/2) et on ajoute l'offset
+        table_pose.pose.position.z = (self.table_height / 2.0) + self.offset_z
+        
+        table_pose.pose.orientation.w = 1.0
 
-        # Terminer le node
-        rospy.signal_shutdown("Table box added")
+        self.scene.add_box("real_table_obstacle", table_pose, (size_x, size_y, size_z))
+        self.publish_debug_marker(table_pose, size_x, size_y, size_z)
+        rospy.sleep(0.5) 
+        
+        rospy.loginfo(f"✅ TABLE CRÉÉE : x={mx:.2f}, y={my:.2f}, Z-centre={table_pose.pose.position.z:.2f}")
+
+    def publish_debug_marker(self, pose, sx, sy, sz):
+        m = Marker()
+        m.header.frame_id = "base_link"
+        m.header.stamp = rospy.Time.now()
+        m.ns = "table_real"
+        m.id = 0
+        m.type = Marker.CUBE
+        m.action = Marker.ADD
+        m.pose = pose.pose
+        m.scale.x = sx
+        m.scale.y = sy
+        m.scale.z = sz
+        m.color.r = 1.0; m.color.g = 0.5; m.color.b = 0.0; m.color.a = 0.6 
+        self.marker_pub.publish(m)
 
 if __name__ == "__main__":
-    TablePlaneDetector()
+    TableObstacleDetector()
