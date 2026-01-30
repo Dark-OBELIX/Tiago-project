@@ -36,6 +36,20 @@ docker_tiagocesi_image_full \
 bash
 ```
 
+```bash
+docker ps -a
+docker start tiago-real-audio-usb 
+docker exec -it tiago-real-audio-usb  bash
+docker stop tiago-real-audio-usb     
+```
+
+
+Téléopération du robot avec le clavier:
+```bash
+rospack find teleop_twist_keyboard
+teleop_twist_keyboard/scripts/teleop_twist_keyboard.py
+```
+
 ---
 
 ## Installation des outils dans le conteneur
